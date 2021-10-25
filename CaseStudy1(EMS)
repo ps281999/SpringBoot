@@ -1,0 +1,131 @@
+//Demo Application
+package com.example.demo;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class DemoApplication implements CommandLineRunner {
+
+	public static void main(String[] args) {
+		SpringApplication.run(DemoApplication.class, args);
+	}
+    @Autowired
+	private employeerepository employeerepository;
+
+	@Override
+	public void run(String... args) throws Exception {
+		Employee employee = new Employee();
+		employee.setFirstname("Prateek");
+		employee.setLastname("Srivastava");
+		employee.setEmailID("ps@gmail.com");
+		employeerepository.save(employee);
+
+		Employee employee1 = new Employee();
+		employee1.setFirstname("S");
+		employee1.setLastname("Muk");
+		employee1.setEmailID("sm@gmail.com");
+		employeerepository.save(employee1);
+	}
+}
+//employee
+package com.example.demo;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import  lombok.Setter;
+import net.bytebuddy.dynamic.loading.InjectionClassLoader;
+
+
+import javax.persistence.*;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "employee")
+public class Employee {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
+    @Column(name = "first_name")
+    private String firstname;
+    @Column(name = "last_name")
+    private  String lastname;
+    @Column(name = "email_id")
+    private String emailID;
+
+}
+//employeeController
+package com.example.demo;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/employee")
+public class EmployeeController {
+    @Autowired
+    private employeerepository employeerepository;
+    @GetMapping
+    public List<Employee> getAllEmployee(){
+        return employeerepository.findAll();
+
+    }
+    @PostMapping
+    public Employee createEmployee(@RequestBody Employee employee){
+        return employeerepository.save(employee);
+    }
+    @GetMapping("{id}")
+    public ResponseEntity<Employee> getEmployeeById(@PathVariable long id){
+        Employee employee = employeerepository.findById(id)
+                .orElseThrow(()-> new Resourcenotfoundexception("Employee not exist with id:"+ id));
+        return ResponseEntity.ok(employee);
+    }
+    @PutMapping("{id}")
+    public ResponseEntity<Employee> updateEmployee(@PathVariable long id,@RequestBody Employee employeeDetatils){
+        Employee updateEmployee = employeerepository.findById(id)
+                .orElseThrow(()-> new Resourcenotfoundexception("Employee not exist with id:"+id));
+        updateEmployee.setFirstname(employeeDetatils.getFirstname());
+        updateEmployee.setLastname(employeeDetatils.getLastname());
+        updateEmployee.setEmailID(employeeDetatils.getEmailID());
+
+        employeerepository.save(updateEmployee);
+        return ResponseEntity.ok(updateEmployee);
+    }
+    @DeleteMapping("{id}")
+    public ResponseEntity<HttpStatus> deleteEmployee(@PathVariable long id){
+        Employee employee = employeerepository.findById(id)
+                .orElseThrow(()-> new Resourcenotfoundexception("Employee not exist with id:"+ id));
+        employeerepository.delete(employee);
+        return  new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+}
+//employeerepository
+package com.example.demo;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+public interface employeerepository extends JpaRepository<Employee , Long> {
+
+}
+//Resourcenotfoundexception
+package com.example.demo;
+import  org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+@ResponseStatus(value =  HttpStatus.NOT_FOUND)
+public class Resourcenotfoundexception extends  RuntimeException{
+
+    public Resourcenotfoundexception(String message){
+        super(message);
+    }
+
+
+}
+
